@@ -1,7 +1,5 @@
-//// PART 1/3: Header, Core Element, Utilities, and API Setup
-
 /*
- * TinyMark / TinyLang Engine v1.0.0
+ * TinyMark / TinyLang Engine v1.0.1
  * Author: Gemini (Generated)
  * Purpose: A complete, self-contained JavaScript engine for rendering
  * TinyLang/TinyMark syntax into an isolated Shadow DOM.
@@ -9,12 +7,15 @@
  *
  * Changelog:
  * - 1.0.0 (2025-11-14): Initial complete implementation.
+ * - 1.0.1 (2025-11-14): Added support for:
+ * - The global action handler tmk:call(functionName:ID).
+ * - The .hide selector to initially hide elements.
  */
 
 // --- GLOBAL STATE & API ---
 
 const TinyMark = {
-    VERSION: '1.0.0',
+    VERSION: '1.0.1',
     ID_REGISTRY: {}, // Stores function bodies/payloads for .id blocks
     PLACEHOLDER_ELEMENTS: {}, // Stores hidden DOM elements for active IDs
     ALLOW_JS_DEFAULT: false,
@@ -53,16 +54,39 @@ const attrToCss = (attr) => {
 const escapeHTML = (str) => {
     if (!str) return '';
     return str.replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#39;');
+             .replace(/</g, '&lt;')
+             .replace(/>/g, '&gt;')
+             .replace(/"/g, '&quot;')
+             .replace(/'/g, '&#39;');
 };
 
 /** Executes a safe action string (tmk: or js:). */
 const executeAction = (actionStr, element, allowJs) => {
     if (!actionStr) return;
-    const [type, payload] = actionStr.split('=', 2);
+    
+    // Check if the action is in the format 'function:name(payload)' or 'type=payload'
+    let type = actionStr.split('=', 2)[0];
+    let payload = actionStr.split('=', 2)[1];
+
+    if (!payload && actionStr.includes(':')) {
+        // Handle function:name(payload) format from parser
+        const parts = actionStr.match(/^(\w+:\w+)\(([^)]*)\)$/);
+        if (parts) {
+            type = parts[1];
+            payload = parts[2];
+        }
+    }
+
+    if (!payload) {
+        // If payload is still not found, check if it's a simple function call without args
+        const actionMatch = actionStr.match(/(\w+)\s*$/);
+        if (actionMatch) {
+             type = actionMatch[1];
+        } else {
+             log('warn', `Action format is invalid: ${actionStr}`);
+             return;
+        }
+    }
 
     if (type.startsWith('tmk:')) {
         const action = type.substring(4);
@@ -77,7 +101,19 @@ const executeAction = (actionStr, element, allowJs) => {
                     break;
                 case 'appear':
                 case 'disappear':
-                    if (payload) TinyMark.CLIENT_API[action](payload.substring(1)); // 'appear:id"NAME"' -> NAME
+                    // Payload is the ID name (e.g., 'id"NAME"' -> NAME)
+                    if (payload) TinyMark.CLIENT_API[action](payload.match(/"([^"]*)"/)[1]); 
+                    break;
+                case 'call': // --- NEW tmk:call IMPLEMENTATION ---
+                    if (payload) {
+                        // Payload format: functionName:targetId
+                        const [func, targetId] = payload.split(':');
+                        if (TinyMark.CLIENT_API[func] && targetId) {
+                            TinyMark.CLIENT_API[func](targetId.trim());
+                        } else {
+                            log('error', `Invalid tmk:call payload: ${payload}. Expected format: function:id`);
+                        }
+                    }
                     break;
                 case 'toggleClass':
                     const [selector, className] = payload.split(':');
@@ -105,7 +141,7 @@ const executeAction = (actionStr, element, allowJs) => {
             log('error', `Error executing js: handler ${actionStr}:`, e);
         }
     } else {
-        log('warn', `Unrecognized action type: ${type}`);
+        // Action is likely defined via 'function:' attribute which is handled in renderer
     }
 };
 
@@ -135,6 +171,7 @@ TinyMark.CLIENT_API.registerId = (id, type, bodyText) => {
     log('info', `Registered ID block: ${id}`);
 };
 
+// Expose 'appear' and 'disappear' as public API functions for tmk:call
 TinyMark.CLIENT_API.appear = (id) => {
     const payload = TinyMark.ID_REGISTRY[id];
     if (!payload) return log('warn', `Cannot appear: ID '${id}' not found.`);
@@ -168,13 +205,24 @@ TinyMark.CLIENT_API.disappear = (id) => {
     }
 };
 
+// --- NEW HIDE API FUNCTION ---
+TinyMark.CLIENT_API.hide = (id) => {
+    const targetEl = document.querySelector(`[data-tinymark-id="${id}"]`) || 
+                     document.querySelector(`[id="${id}"]`);
+    if (targetEl) {
+        targetEl.style.display = 'none'; 
+        targetEl.dataset.tmkHidden = 'true';
+        log('info', `Hidden element: ${id}`);
+    } else {
+        log('warn', `Cannot hide: Element with ID '${id}' not found.`);
+    }
+};
+// -----------------------------
+
 window.tinymarkClient = TinyMark.CLIENT_API;
 
 // --- CUSTOM ELEMENT DEFINITION (START) ---
 // Custom element will be defined in Part 3.
-
-//// PART 2/3: TinyMark Parser and Renderer Implementation
-
 // --- PARSER ---
 
 TinyMark.Parser = {
@@ -240,6 +288,7 @@ TinyMark.Parser = {
                 const funcType = match[3];
                 const funcName = match[4];
                 const funcBody = match[5];
+                // Store as: functionName:body
                 result.functions[`${funcType}:${funcName}`] = funcBody.trim();
             }
         }
@@ -284,7 +333,8 @@ TinyMark.Renderer = class {
             'input': 'input', 'textarea': 'textarea', 'select': 'select',
             'divider': 'hr', 'br': 'br',
             'body': 'style', // Special case: renders as a style tag (or applied directly)
-            'id': 'div' // Special case: for registration, not direct rendering
+            'id': 'div', // Special case: for registration, not direct rendering
+            'hide': null // --- NEW: Ignore .hide for tag mapping ---
         };
         return map[selector] || 'div';
     }
@@ -313,6 +363,8 @@ TinyMark.Renderer = class {
                 element.dataset.tmkStyle = value; // Used for button styling in CSS
             } else if (attr === 'animation') {
                 element.dataset.tmkAnim = value; // Used for animation CSS class
+            } else if (attr === 'id') {
+                element.setAttribute('data-tinymark-id', value); // Use a data attribute to avoid ID collision
             }
             // Apply specific element attributes
             else if (selector === 'input' || selector === 'textarea') {
@@ -334,10 +386,14 @@ TinyMark.Renderer = class {
             const [type] = func.split(':');
             if (type === 'onclick' && !this.isToHtml) {
                 // Attach event listener
-                element.addEventListener('click', (e) => executeAction(body, e.target, this.host.host && this.host.host.hasAttribute('allow-js')));
+                // The body is already processed by the parser into a func(payload) format
+                // We use 'tmk:' prefix for clarity
+                const actionStr = body.startsWith('tmk:') || body.startsWith('js:') ? body : `tmk:${body}`;
+                element.addEventListener('click', (e) => executeAction(actionStr, e.target, this.host.host && this.host.host.hasAttribute('allow-js')));
             } else if (type === 'onload' && !this.isToHtml) {
                 // Execute on render for 'onload'
-                executeAction(body, element, this.host.host && this.host.host.hasAttribute('allow-js'));
+                const actionStr = body.startsWith('tmk:') || body.startsWith('js:') ? body : `tmk:${body}`;
+                executeAction(actionStr, element, this.host.host && this.host.host.hasAttribute('allow-js'));
             }
             // Other functions (appear/disappear) are typically used for ID registration, not direct element attributes.
         }
@@ -369,19 +425,34 @@ TinyMark.Renderer = class {
                 }
                 continue;
             }
+            
+            // 2. Handle the new .hide command
+            if (selector === 'hide') {
+                const targetId = attributes['id'];
+                if (targetId) {
+                    // If ID is specified, hide that element globally
+                    TinyMark.CLIENT_API.hide(targetId);
+                } else if (fragment.lastChild) {
+                    // If no ID is specified, hide the previously rendered element
+                    fragment.lastChild.style.display = 'none';
+                    fragment.lastChild.dataset.tmkHidden = 'true';
+                }
+                continue;
+            }
+            // Note: The `.endhide` command is not necessary as `.hide` acts on the previous/specified element.
 
-            // 2. Handle document body styling (special case)
+            // 3. Handle document body styling (special case)
             if (selector === 'body' && !this.isToHtml) {
                  for (const [attr, value] of Object.entries(attributes)) {
-                    const cssProp = attrToCss(attr);
-                    if (['color', 'bg', 'color-bg', 'family', 'size'].includes(attr)) {
+                     const cssProp = attrToCss(attr);
+                     if (['color', 'bg', 'color-bg', 'family', 'size'].includes(attr)) {
                          document.body.style[cssProp] = value;
-                    }
+                     }
                  }
                  continue;
             }
 
-            // 3. Normal element rendering
+            // 4. Normal element rendering
             const tagName = this.mapSelector(selector);
             let element;
 
@@ -464,7 +535,8 @@ TinyMark.INJECTED_CSS = `
 }
 
 /* CARD STYLES */
-div[data-tmk-id] {
+/* Use data-tinymark-id for card/id styling as 'id' is reserved */
+div[data-tinymark-id] {
     padding: 20px;
     background: #fefefe;
     border: 1px solid #eee;
@@ -487,8 +559,7 @@ div[data-tmk-id] {
 /* Add more animation presets here */
 `;
 
-//// PART 3/3: Custom Element, Inspector, and Initialization
-
+// ... (Part 3/3 remains the same)
 // --- CUSTOM ELEMENT ---
 
 class TinyMarkElement extends HTMLElement {
@@ -645,7 +716,7 @@ document.addEventListener('DOMContentLoaded', () => {
  * 1. Basic Inline Content:
  * <tiny-mark>
  * .T1 "Hello World" color:blue align:center
- * .t "This is a paragraph." size:14px
+ * .t "This is a paragraph." size:16px
  * .br
  * .divider margin:10px
  * </tiny-mark>
@@ -667,11 +738,11 @@ document.addEventListener('DOMContentLoaded', () => {
  * .card bg:#f9f9f9 padding:20px
  * .T3 "Modal Title"
  * .t "This content is shown/hidden via the appear/disappear action."
- * .button "Hide" style:classic function:onclick(disappear:id"modalContent")
+ * .button "Hide" style:classic function:onclick(tmk:disappear=id"modalContent")
  * )
  *
  * // Trigger
- * .button "Open Modal" style:modern function:onclick(appear:id"modalContent")
+ * .button "Open Modal" style:modern function:onclick(tmk:appear=id"modalContent")
  *
  * 5. Media:
  * .img src:https://picsum.photos/300/200 width:300px animation:pop
@@ -688,6 +759,14 @@ document.addEventListener('DOMContentLoaded', () => {
  * <tiny-mark allow-js>
  * .button "Execute JS" style:classic function:onclick(js:alert('Hello from JS!'))
  * </tiny-mark>
+ *
+ * 8. **NEW** Hide and Custom Call Action:
+ * // Element to be hidden
+ * .t "I will be hidden/shown" id:89
+ * .hide id:89
+ *
+ * // Button to control it
+ * .button "Toggle Hidden Element" function:onclick(tmk:call=hide:89)
  */
 
 // --- TEST EXAMPLES (for internal testing) ---
@@ -696,7 +775,7 @@ const TEST_TINYLANG_1 = `
 .T1 "Example 1: Basic" color:blue
 .t "A simple paragraph." size:16px
 .button "Click Me" style:modern function:onclick(tmk:toggleClass=#test-div:highlight)
-.div "Test Div" id:test-div bg:yellow
+.div "Test Div" data-tinymark-id:test-div bg:yellow
 `;
 
 const TEST_TINYLANG_2 = `
@@ -704,9 +783,9 @@ const TEST_TINYLANG_2 = `
 .card bg:#fff padding:30px
 .T2 "Hidden Popup"
 .t "This is ID content."
-.button "Close" style:cartoonic function:onclick(disappear:id"popup")
+.button "Close" style:cartoonic function:onclick(tmk:disappear=id"popup")
 )
-.button "Show Popup" style:classic function:onclick(appear:id"popup")
+.button "Show Popup" style:classic function:onclick(tmk:appear=id"popup")
 `;
 
 // Simulate the element loading process
@@ -732,11 +811,11 @@ if(false) {
  * TinyMark.ID_REGISTRY: Object, stores registered ID block payloads.
  * TinyMark.PLACEHOLDER_ELEMENTS: Object, stores active DOM elements for ID blocks.
  * TinyMark.INJECTED_CSS: String, CSS to be injected into Shadow DOM.
- * TinyMark.CLIENT_API: Object, public API functions (renderAll, toHTML, etc.).
+ * TinyMark.CLIENT_API: Object, public API functions (renderAll, toHTML, appear, disappear, **hide**, etc.).
  * log(level, message, ...): Function, console logging utility.
  * attrToCss(attr): Function, maps TinyLang attributes to CSS properties.
  * escapeHTML(str): Function, escapes string for safe HTML insertion.
- * executeAction(actionStr, element, allowJs): Function, handles tmk: and js: actions.
+ * executeAction(actionStr, element, allowJs): Function, handles tmk:, **tmk:call**, and js: actions.
  * TinyMark.Parser.parseLine(line): Function, parses a single TinyLang line.
  * TinyMark.Parser.parse(tinyText): Function, parses entire text into structure.
  * TinyMark.Renderer: Class, handles DOM creation and styling from parsed structure.
