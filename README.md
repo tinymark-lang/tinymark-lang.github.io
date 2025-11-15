@@ -11,7 +11,7 @@ TinyMark is a revolutionary **lightweight markup language engine** designed to t
 | **Official Page** | 🌐 [tinymark-lang.page.gd](tinymark-lang.page.gd) |
 | **Creator** | Aryansh Rai ([instagram.com/real.foil](https://instagram.com/real.foil)) |
 | **Socials** | 📸 [@tinymark-lang](https://instagram.com/tinymarklang) |
-| **Version** | v1.0.0 (Initial Release) |
+| **Version** | v1.8 (Initial Release) :|
 
 ---
 
