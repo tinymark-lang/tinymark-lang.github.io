@@ -1,6 +1,6 @@
 
 
-# ✨ TinyMark v1.0.0: The Lightweight Declarative Web Content Engine 🚀
+# ✨ TinyMark v1.8: The Lightweight Declarative Web Content Engine 🚀
 
 TinyMark is a revolutionary **lightweight markup language engine** designed to transform how you build dynamic web content. By leveraging a concise, declarative syntax and the power of Web Components (Shadow DOM), TinyMark allows developers to create interactive UIs with minimal boilerplate and maximum clarity.
 
@@ -8,7 +8,7 @@ TinyMark is a revolutionary **lightweight markup language engine** designed to t
 
 | Detail | Value |
 | :--- | :--- |
-| **Live Demo** | 🌐 [tinymark-lang.page.gd](tinymark-lang.page.gd) |
+| **Official Page** | 🌐 [tinymark-lang.page.gd](tinymark-lang.page.gd) |
 | **Creator** | Aryansh Rai ([instagram.com/real.foil](https://instagram.com/real.foil)) |
 | **Socials** | 📸 [@tinymark-lang](https://instagram.com/tinymarklang) |
 | **Version** | v1.0.0 (Initial Release) |
@@ -71,7 +71,7 @@ TinyMark is built with security in mind, providing a safe environment for conten
 Ensure `tinymark.js` is accessible and linked in your HTML:
 
 ```html
-<script src="tinymark.js"></script>
+<script src="tinymark-lang.github.io/tinymark.js"></script>
 ```
 
 ### 2\. Write Your TinyMark
@@ -83,7 +83,7 @@ Place your declarative markup inside the `<tiny-mark>` custom element:
 <html>
 <head>
     <title>TinyMark App</title>
-    <script src="tinymark.js"></script>
+    <script src="tinymark-lang.github.io/tinymark.js"></script>
 </head>
 <body>
 
