@@ -1,120 +1,109 @@
-I've updated the README to include the author and social details, and provided a more detailed explanation of the core concepts of **TinyMark**.
 
-# ✨ TinyMark v1.0.0: Lightweight Declarative Web Content Engine
 
-**Access TinyMark Live:** [tinymark-lang.page.gd](https://www.google.com/search?q=tinymark-lang.page.gd)
+# ✨ TinyMark v1.0.0: The Lightweight Declarative Web Content Engine 🚀
 
-**Created by:** Aryansh Rai ([instagram.com/real.foil](https://www.google.com/search?q=https://instagram.com/real.foil))
+TinyMark is a revolutionary **lightweight markup language engine** designed to transform how you build dynamic web content. By leveraging a concise, declarative syntax and the power of Web Components (Shadow DOM), TinyMark allows developers to create interactive UIs with minimal boilerplate and maximum clarity.
 
-**Follow Us:** [@tinymark-lang](https://www.google.com/search?q=https://instagram.com/tinymarklang)
+## 🔗 Project & Creator Info
 
-TinyMark is a **lightweight markup language engine** designed to simplify building interactive web content using a concise, declarative syntax. It utilizes a custom `<tiny-mark>` element and the Shadow DOM to render dynamic elements, manage styles, and handle user interactions without relying on heavy frameworks.
+| Detail | Value |
+| :--- | :--- |
+| **Live Demo** | 🌐 [tinymark-lang.page.gd](tinymark-lang.page.gd) |
+| **Creator** | Aryansh Rai ([instagram.com/real.foil](https://instagram.com/real.foil)) |
+| **Socials** | 📸 [@tinymark-lang](https://instagram.com/tinymarklang) |
+| **Version** | v1.0.0 (Initial Release) |
 
------
+---
 
-## 💡 Detailed Explanation of Core Concepts
+## 🧐 Detailed Explanation of Core Concepts
 
-TinyMark operates on four key principles: **Declarative Rendering**, **Component Isolation**, **Functional Interactivity**, and **Security by Default**.
+TinyMark operates on a foundation of four principles for building simple, fast, and maintainable web interfaces:
 
-### 1\. Declarative Rendering and Selectors
+### 1. 🌈 Declarative Rendering & Conciseness
 
-TinyMark replaces traditional HTML tags with a concise, line-based syntax that starts with a dot followed by a **selector** (e.g., `.t`, `.T1`, `.btn`).
+TinyMark replaces lengthy HTML tags and classes with a single, clear line of text.
 
-  * **Syntax Structure:** Each line represents an element:
-    `.[Selector] "[Text Content]" [Attribute:Value]`
-  * **Attributes:** Styling and behavior are applied using simple `key:value` pairs appended to the line (e.g., `color:blue`, `size:18px`). The engine parses these to apply inline CSS styles or handle specific element properties (`src`, `href`).
-  * **Example:**
-    ```tinymark
-    .T1 "Project Name" color:red size:40px family:Helvetica
-    .btn "Start" function:onclick(call:toggle:section1) style:modern
-    ```
+* **Structure:** Each element follows the pattern: `.[Selector] "[Text Content]" [Attribute:Value]`
+* **Selectors:** Dot-prefixed selectors (e.g., `.t`, `.btn`, `.card`) map directly to standard HTML elements, streamlining development.
+* **Styling:** Styling is applied using simple `key:value` attributes (e.g., `color:blue`, `bg:#333`, `size:20px`), which the engine translates into secure inline styles.
 
-### 2\. Component Isolation with Shadow DOM
+### 2. 🛡️ Component Isolation with Shadow DOM
 
-TinyMark leverages **Web Components**, specifically the `<tiny-mark>` element, and attaches a **Shadow DOM** to it.
+TinyMark ensures stability and compatibility by utilizing the Shadow DOM standard.
 
-  * **Encapsulation:** By rendering content within the Shadow DOM, TinyMark ensures that the styles it applies and the elements it creates are completely **isolated** from the main page's CSS. This prevents styling conflicts and makes TinyMark highly portable.
-  * **Self-Contained Rendering:** The engine parses the raw text content inside the `<tiny-mark>` tag, translates it into the appropriate HTML structure, applies styles, and injects it into the isolated shadow tree.
+* **Isolation:** All elements and styles rendered by `<tiny-mark>` are confined to the component's **shadow tree**. This prevents style leakage and conflicts with the main page's CSS or other libraries.
+* **Self-Contained:** Your TinyMark content is guaranteed to look and function exactly as intended, regardless of the host page environment.
 
-### 3\. Dynamic Interactivity and Hidden Blocks
+### 3. 🖱️ Dynamic Interactivity via Functions
 
-Interactivity is managed through a powerful function system based on the `function:` attribute, coupled with the concept of hidden, reusable content blocks.
+TinyMark introduces a powerful, low-code system for handling events and content toggling.
 
-#### A. Block Toggling (`.hide` and `.placeholder`)
+#### A. Block Management (`.hide` & `.placeholder`)
 
-Instead of dynamically generating content, TinyMark lets you pre-define blocks of content that are not rendered initially.
+Complex content blocks can be defined once and toggled on demand:
+* **Definition:** Use `.hide id:[ID]... .endhide` to register a content block without rendering it immediately.
+* **Placement:** Use `.placeholder id:[ID]` to define the target location for the content.
+* **Action:** A button uses `function:onclick(call:toggle:[ID])` to seamlessly render the hidden block into the placeholder and manage its visibility.
 
-  * **`.hide` / `.endhide`:** Defines a block of TinyMark code with an `id`. This code is **parsed and stored** by the engine but is not rendered to the page.
-  * **`.placeholder`:** Defines a specific area (`<section>`) in the rendered output where a hidden block will be inserted when called.
-  * **`call:` Action:** A button's `onclick` function uses `call:toggle:ID` to fetch the stored TinyMark from the hidden block, render it into the placeholder, and make it visible.
+#### B. Event Handlers (`function:`)
 
-#### B. Functions (`oncall`)
+The `function:` attribute supports simple, chainable commands for interactions:
 
-The `.id` selector can be used to register a block of actions that can be triggered from anywhere.
+| Handler | Trigger | Primary Use |
+| :--- | :--- | :--- |
+| `onclick` | User clicks the element. | `function:onclick(call:show:intro)` |
+| `oncall` | Registered as a reusable function block. | `.id "updateTime" function:oncall(...)` |
+| `onload` | Element finishes rendering. | `function:onload(call:hide:loader)` |
 
-  * **Registration:** `.id "myFunction" function:oncall( /* actions */ )`
-  * **Execution:** `function:onclick(call:myFunction)`
+### 4. 🔒 Security First (`allow-js`)
 
-### 4\. Security Model (`allow-js`)
+TinyMark is built with security in mind, providing a safe environment for content rendering.
 
-TinyMark prioritizes security, especially when handling external or user-provided content.
+* **Default Block:** By default, all attempts to run raw JavaScript code via `js:` handlers are **blocked**.
+* **Opt-In Privilege:** Developers must explicitly add the `allow-js` attribute to the `<tiny-mark>` tag to enable JavaScript execution within that component, maintaining control over security boundaries.
 
-  * **Opt-In JavaScript:** By default, any attempt to execute raw JavaScript code using `js:` handlers (e.g., `js:alert('X')`) is **blocked** and logged as a warning.
-  * **Enabling JS:** The developer must explicitly add the `allow-js` boolean attribute to the parent `<tiny-mark>` tag to permit JavaScript execution within that specific component.
+---
 
------
+## 🚀 Quick Start Guide
 
-## 🚀 Key Features
+### 1. Include the Script
 
-  * **Declarative Syntax:** Build UIs with simple, dot-prefixed commands like `.T1` for headers or `.btn` for buttons.
-  * **Custom Element:** Uses the `<tiny-mark>` Web Component, ensuring component isolation via **Shadow DOM**.
-  * **Built-in Elements:** Support for text, media (`.img`, `.video`), form inputs, and layout helpers (`.row`, `.card`).
-  * **Animations:** Apply simple, effective animations like `hover`, `fade`, and `pop` using the `animation:` attribute.
-  * **Inspector Tool:** **Shift+Click** on any TinyMark rendered element to instantly view its raw source line and computed attributes.
-  * **Public API:** Interact with the engine programmatically via `window.tinymarkClient`.
-
------
-
-## 💻 Installation and Usage
-
-### 1\. Include the Script
-
-Download the `tinymark.js` file and include it in your HTML document.
+Ensure `tinymark.js` is accessible and linked in your HTML:
 
 ```html
 <script src="tinymark.js"></script>
 ```
 
-### 2\. Write Your TinyMark Content
+### 2\. Write Your TinyMark
 
-Place your TinyMark code inside the `<tiny-mark>` custom element.
+Place your declarative markup inside the `<tiny-mark>` custom element:
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TinyMark Demo</title>
+    <title>TinyMark App</title>
     <script src="tinymark.js"></script>
 </head>
 <body>
 
     <tiny-mark allow-js>
-        // Headings and basic text
-        .T1 "Hello TinyMark World" color:blue size:48px
-        .t "Welcome to TinyMark!" size:18px family:Arial margin:10px 0
+        // 💬 Heading and introductory text
+        .T1 "The TinyMark Difference" color:#764ba2 size:36px
+        .t "Build dynamic web content quickly and declaratively." size:16px
 
-        .divider // Simple horizontal divider
+        .divider // 📏 Separator
 
-        // Interactive Button
-        .btn "Click me to toggle content" function:onclick(call:toggle:content1) style:modern
+        // 🟢 Button with built-in styling and toggle action
+        .btn "Toggle Details" function:onclick(call:toggle:details) style:modern animation:hover
 
-        // Hidden block of content (will not render until called)
-        .hide id:content1
-            .card "This content is initially hidden and toggled by the button." bg:#f0f0f0 padding:15px radius:4px animation:slide-down
+        // 🤫 Hidden block defined for later use
+        .hide id:details
+            .card "This content appeared with a smooth slide-down effect!" bg:#e6f3ff padding:15px radius:6px animation:slide-down
         .endhide
 
-        // A placeholder where the content will appear
-        .placeholder id:content1
+        // 🎯 Placeholder where the content will be inserted
+        .placeholder id:details
 
     </tiny-mark>
 
@@ -124,40 +113,60 @@ Place your TinyMark code inside the `<tiny-mark>` custom element.
 
 -----
 
-## 📖 Syntax Reference
+## 📘 Comprehensive Syntax Reference
 
-| Selector | HTML Tag | Description | Example |
+### Element Selectors
+
+| Selector | Renders As | Description | Styling Examples |
 | :--- | :--- | :--- | :--- |
-| `.T1` - `.T6` | `<h1>` - `<h6>` | Headings | `.T2 "Section Title" color:green` |
-| `.t` | `<p>` | Standard Text/Paragraph | `.t "A nice paragraph."` |
-| `.btn` / `.button` | `<button>` | Interactive Button | `.btn "Submit" style:cartoonic` |
-| `.img` | `<img>` | Image | `.img src:image.jpg width:300px` |
-| `.row`, `.col` | `<div>` (flex) | Layout containers | `.row gap:20px` |
-| `.card` | `<div>` | Boxed content area | `.card shadow:lg bg:#fff` |
-| `.hide` | N/A | Defines content for toggling | `.hide id:block1` |
-| `.placeholder` | `<section>` | Target for hidden content | `.placeholder id:block1` |
+| `.T1` - `.T6` | `<h1>` - `<h6>` | Headings | `color:navy family:Impact` |
+| `.t` | `<p>` | Standard paragraph text | `size:14pt align:left` |
+| `.btn` / `.button` | `<button>` | Actionable button | `style:cartoonic bg:orange` |
+| `.img` | `<img>` | Media element | `src:logo.png width:100% height:auto` |
+| `.row` | `<div>` (`display:flex`) | Horizontal layout | `gap:10px` |
+| `.card` | `<div>` | Boxed container | `shadow:medium radius:8px` |
+| `.input` | `<input>` | Form input field | `type:text placeholder:"Enter text"` |
+| `.divider` | `<hr>` | Horizontal rule | `border:1px solid gray` |
 
-### Interactivity Actions (used within `function:`)
+### Styling & Animation Attributes
 
-| Action | Purpose | Example |
-| :--- | :--- | :--- |
-| `call:show:ID` | Renders and displays the hidden block with `ID`. | `call:show:my-section` |
-| `call:toggle:ID` | Toggles the visibility of the block with `ID`. | `call:toggle:my-section` |
-| `call:ID` | Executes a registered `oncall` function. | `call:myFunction` |
-| `js:<code>` | Executes raw JavaScript (requires `allow-js`). | `js:console.log('Done!')` |
+| Attribute | Category | Description | Examples |
+| :--- | :--- | :--- | :--- |
+| `color`, `bg` | **Color** | Foreground and background colors. | `color:white bg:black` |
+| `size`, `family` | **Typography** | Font size and family. | `size:1.2em family:Roboto` |
+| `padding`, `margin` | **Spacing** | CSS shorthand for inner/outer spacing. | `padding:10px` `margin:20px 0` |
+| `radius`, `shadow` | **Visuals** | Border radius and box shadow. | `radius:50% shadow:z-depth-3` |
+| `animation` | **Motion** | Apply pre-defined effects. | `animation:pop` `animation:slide-left` |
 
 -----
 
-## ⚙️ Public API (`window.tinymarkClient`)
+## 🛠️ Public API (`window.tinymarkClient`)
 
-The TinyMark engine exposes a global object for programmatic control.
+For programmatic control over your TinyMark components from external JavaScript, use the global client object.
 
 | Function | Description | Example |
 | :--- | :--- | :--- |
-| `renderAll()` | Forces all `<tiny-mark>` elements to re-render. | `tinymarkClient.renderAll()` |
-| `unhide(id)` | Renders and displays the hidden block by ID. | `tinymarkClient.unhide('content1')` |
-| `hide(id)` | Hides the content block by ID. | `tinymarkClient.hide('content1')` |
-| `toggle(id)` | Toggles the content block visibility by ID. | `tinymarkClient.toggle('content1')` |
-| `callFunction(id)` | Executes a registered `oncall` function by ID. | `tinymarkClient.callFunction('myFunc')` |
+| `tinymarkClient.renderAll()` | Forces all mounted `<tiny-mark>` instances to re-parse and re-render their content. | `tinymarkClient.renderAll()` |
+| `tinymarkClient.unhide(id)` | Renders and displays a hidden block into its placeholder. | `tinymarkClient.unhide('userForm')` |
+| `tinymarkClient.hide(id)` | Clears and collapses the placeholder element. | `tinymarkClient.hide('results')` |
+| `tinymarkClient.toggle(id)` | Flips the visibility state of a block. | `tinymarkClient.toggle('menu')` |
+| `tinymarkClient.callFunction(id)` | Executes a registered `oncall` function. | `tinymarkClient.callFunction('apiCall')` |
 
-Would you like a sample TinyMark file (`.tmk`) created to showcase these features?
+-----
+
+## 🔍 The TinyMark Inspector (Shift + Click)
+
+TinyMark includes a developer-friendly inspection tool built right into the engine.
+
+> 💡 **Tip:** While browsing your rendered TinyMark page, hold **Shift** and **click** on any element.
+
+A modal will appear, displaying:
+
+1.  **Raw Source:** The exact TinyMark line of code that generated the element.
+2.  **Parsed Attributes:** A JSON representation of all resolved attributes.
+3.  **Computed Styles:** Key computed CSS properties for quick debugging.
+
+This tool simplifies debugging and helps new users quickly understand the syntax.
+
+```
+```
